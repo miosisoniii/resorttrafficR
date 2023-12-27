@@ -1,14 +1,20 @@
+## app.R
 
-# googleMaps API key
-gmap_key <- "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw"
-
-
+## load dependencies
 library(shiny)
 library(googleway)
 
-# Set your Google API key
+## googleMaps API key
+gmap_key <- "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw"
+
+## Set your Google API key
 set_key(gmap_key)
 
+## source inputVars to get input selection vals
+source("./helpers/helper02_inputvars.R")
+
+
+## UI --------------------------------------------------------------------------
 ui <- fluidPage(
   titlePanel("Ski Resort Travel Time Calculator"),
   
@@ -16,7 +22,7 @@ ui <- fluidPage(
     sidebarPanel(
       selectInput("resort",
                   "Choose a Ski Resort:",
-                  choices = c("Winter Park", "Copper", "Eldora")),
+                  choices = inputvar_resort),
       textInput("address", "Enter Your Starting Address:", value = "Your address here")
     ),
     mainPanel(
@@ -25,11 +31,12 @@ ui <- fluidPage(
   )
 )
 
+## server ----------------------------------------------------------------------
 server <- function(input, output) {
   
   output$travelTime <- renderText({
     # Define resort addresses (these should be accurate)
-    resorts <- c("Winter Park" = "address_of_winter_park", 
+    resorts <- c("Winter Park" = , 
                  "Copper" = "address_of_copper", 
                  "Eldora" = "address_of_eldora")
     
@@ -37,7 +44,9 @@ server <- function(input, output) {
     if (input$address != "") {
       result <- google_distance(origins = input$address,
                                 destinations = resorts[input$resort],
-                                mode = "driving")
+                                mode = "driving",
+                                traffic_model = "pessimistic")
+      
       if (result$status == "OK") {
         travel_time <- result$rows$elements$duration$text
         paste("Estimated travel time to", input$resort, "is", travel_time)
