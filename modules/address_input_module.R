@@ -2,7 +2,8 @@
 
 addressInputUI <- function(id) {
   ns <- NS(id)
-  textInput(ns("address"), "Enter Your Address:", value = "")
+  textInput(ns("address"), "Enter Your Address:", 
+            value = "101 14th Ave, Denver, CO 80204") # address of Denver City Hall
 }
 
 ##### SERVER
