@@ -20,6 +20,9 @@ resortSelectionServer <- function(id) {
     # This can be expanded based on the requirements
     selected_resort <- reactive({ input$resort })
     
+    # use get_resort_address
+    # selected_resort_address <- get_resort_address(resort_name = selected_resort())
+    
     return(selected_resort)
   })
 }
