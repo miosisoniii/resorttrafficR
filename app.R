@@ -1,72 +1,126 @@
 ## app.R
 
 ## load dependencies
-require(shiny)
-require(googleway)
+library(shiny)
+library(dplyr)
+library(googleway)
+library(purrr)
 
 ## source inputVars to get input selection vals
-source("./helpers/helper02_inputvars.R")
-source("./R/get_resort_address.R")
+source("R/get_traveltime.R")
+source("R/get_resort_address.R")
+source("helpers/helper02_inputvars.R")
 
+## source modules code
+source("modules/pass_selection_module.R")
+source("modules/resort_selection_module.R")
+source("modules/address_input_module.R")
+source("modules/resort_link_module.R")
 
-## UI --------------------------------------------------------------------------
+## Modules Code ----------------------------------------------------------------
+
+##### UI
+
 ui <- fluidPage(
-  titlePanel("Ski Resort Travel Time Calculator"),
+  
+  titlePanel("resorttrafficR"),
   
   sidebarLayout(
     sidebarPanel(
-      selectInput("resort",
-                  "Choose a Ski Resort:",
-                  choices = inputvar_resort),
-      textInput("address", "Enter Your Starting Address:", 
-                value = "101 14th Ave, Denver, CO 80204") # address of city hall
+      passSelectionUI("passSelect"),
+      # resortSelectionUI("resortSelect"),
+      addressInputUI("addressInput"),
+      actionButton("submit2", "Get travel times!"),
     ),
     mainPanel(
-      textOutput("travelTime"),
-      textOutput("travelTime_traffic")
+      tableOutput("travelTimeTable"),
+      resortLinkUI("resortLinkModule")
     )
   )
 )
 
-## server ----------------------------------------------------------------------
-server <- function(input, output) {
+##### SERVER
+server <- function(input, output, session) {
   
-  ## googleMaps API key
-  gmap_key <- "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw"
-  ## Set Google API key
-  googleway::set_key(gmap_key)
+  # Reactive value to indicate if the table is ready
+  table_ready <- reactiveVal(FALSE)
   
-  output$travelTime <- renderText({
+  selected_pass_reactive <- passSelectionServer("passSelect")
+  selected_resort_reactive <- resortSelectionServer("resortSelect")
+  user_address_reactive <- addressInputServer("addressInput")
+  
+  submit_traveltime <- eventReactive(input$submit2, {
     
-    ## using get_resort_address fn
-    resorts <- get_resort_address(resort_name = input$resort)
+    user_address <- user_address_reactive()
+    selected_pass <- selected_pass_reactive()
     
-    # Get travel time
-    if (input$address != "") {
+    if(!is.null(user_address) && !is.null(selected_pass)) {
+      pass_resorts <- resort_data %>% filter(NAME_PASS == selected_pass)
+      table_traveltime <- get_traveltime_df(user_address = user_address, resort_df = pass_resorts) 
       
-      ## input using fn
-      resort_address <- get_resort_address(resort_name = input$resort)
+      ## set reactiveValue to TRUE
+      table_ready(TRUE)
+      return(table_traveltime)
       
-      result <- googleway::google_distance(origins = input$address,
-                                           destinations = resort_address,
-                                           mode = "driving",
-                                           traffic_model = "pessimistic", 
-                                           departure_time = 'now',
-                                           key = gmap_key)
       
-      if (result$status == "OK") {
-        # travel_time <- result$rows$elements[[1]]$duration$text
-        travel_time_traffic <- result$rows$elements[[1]]$duration_in_traffic$text
-        # paste("Estimated travel time to", input$resort, "is", travel_time)
-        paste("Estimated travel time (with traffic) to", input$resort, "is", travel_time_traffic)
-        
-      } else {
-        paste("Error:", result$status)
-      }
     } else {
-      "Please enter your starting address."
+      NULL
     }
+    
   })
+  
+  #### UI OUTPUTS --------------------------------------------------------------
+  
+  output$travelTimeTable <- renderTable({
+    table_ready(TRUE)
+    submit_traveltime() %>%
+      dplyr::select(-NAME_PASS, -gmaps_obj, -TIME_VAL_TRAFFIC, -GMAP_LINK_RESORT, -ADDRESS_RESORT)
+  })
+  
+  # Call the resort link server function and pass the reactive value
+  resortLinkServer("resortLinkModule", submit_traveltime, table_ready)
+  
 }
 
 shinyApp(ui, server)
+  
+  
+  
+  
+
+  ##### Not Used ---------------------------------------------------------------
+  
+  ## may be useful later when selecting individual resorts
+  # selected_pass_reactive <- passSelectionServer("passSelect")
+  # selected_resort_reactive <- resortSelectionServer("resortSelect")
+  # user_address_reactive <- addressInputServer("addressInput")
+  # 
+  # # new eventreactive with gmaps
+  # submit_address <- eventReactive(input$submit1, {
+  #   
+  #   user_address <- user_address_reactive()
+  #   selected_resort <- selected_resort_reactive()
+  #   
+  #   if (!is.null(user_address) && !is.null(selected_resort)) {
+  #     
+  #     get_traveltime(start_address = user_address,
+  #                    resort_name = selected_resort)
+  #     
+  #   } else {
+  #     NULL
+  #   }
+  #   
+  # })
+  
+  # this may be useful when showing directions to the fastest resort
+  # output$mapOutput <- renderGoogle_map({
+  #   if (!is.null(submit_address())) {
+  #     google_map(data = submit_address(), key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
+  #   }
+  # })
+  # 
+
+
+
+
+
