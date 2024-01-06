@@ -5,6 +5,7 @@ require(shiny)
 require(googleway)
 
 ## source inputVars to get input selection vals
+source("R/get_traveltime.R")
 source("./helpers/helper02_inputvars.R")
 source("./R/get_resort_address.R")
 
@@ -51,27 +52,17 @@ server <- function(input, output, session) {
   selected_resort_reactive <- resortSelectionServer("resortSelect")
   user_address_reactive <- addressInputServer("addressInput")
 
-  # original code
-  # submit_address <- eventReactive(input$submit1, {
-  #   resort_address <- get_resort_address(resort_name = selected_resort_reactive())
-  #   return(resort_address)
-  # })
-  
   # new eventreactive with gmaps
   submit_address <- eventReactive(input$submit1, {
     
     user_address <- user_address_reactive()
     selected_resort <- selected_resort_reactive()
-    resort_address <- get_resort_address(resort_name = selected_resort)
 
     if (!is.null(user_address) && !is.null(selected_resort)) {
-
-      googleway::google_distance(origins = user_address,
-                                 destinations = resort_address,
-                                 mode = "driving",
-                                 traffic_model = "pessimistic",
-                                 departure_time = 'now',
-                                 key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
+      
+      get_traveltime(start_address = user_address,
+                     resort_name = selected_resort)
+      
     } else {
       NULL
     }
@@ -82,23 +73,6 @@ server <- function(input, output, session) {
     submit_address()
   })
   
-  # # Using eventReactive to handle the submit button action
-  # submit_response <- eventReactive(input$submitButton, {
-  #   selected_resort <- selected_resort_reactive()
-  #   user_address <- user_address_reactive()
-  # 
-  #   if (!is.null(user_address) && !is.null(selected_resort)) {
-  #     resort_address <- get_resort_address(resort_name = selected_resort)
-  #     googleway::google_distance(origins = user_address,
-  #                                destinations = resort_address,
-  #                                mode = "driving",
-  #                                traffic_model = "pessimistic",
-  #                                departure_time = 'now',
-  #                                key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
-  #   } else {
-  #     NULL
-  #   }
-  # })
 
   # Update the UI elements based on the response from submit_response
   output$travelTimeWithoutTraffic <- renderText({
@@ -113,12 +87,13 @@ server <- function(input, output, session) {
     }
   })
 
-  output$mapOutput <- renderGoogle_map({
-    if (!is.null(submit_address())) {
-      google_map(data = submit_address(), key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
-    }
-  })
-  
+  # this may be useful when showing directions to the fastest resort
+  # output$mapOutput <- renderGoogle_map({
+  #   if (!is.null(submit_address())) {
+  #     google_map(data = submit_address(), key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
+  #   }
+  # })
+  # 
 }
 
 shinyApp(ui, server)
