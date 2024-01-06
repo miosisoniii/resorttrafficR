@@ -18,59 +18,107 @@ source("modules/submit_button_module.R")
 
 ui <- fluidPage(
   
-  resortSelectionUI("resortSelect"),
-  addressInputUI("addressInput"),
-  submitButtonUI("submitButton"),
+  titlePanel("resorttrafficR"),
   
-  # Add UI elements for displaying the travel times and map
-  textOutput("travelTimeWithoutTraffic"),
-  textOutput("travelTimeWithTraffic"),
-  google_mapOutput("mapOutput", height = "400px") # Adjust size as needed
-  
-)
+  sidebarLayout(
+    sidebarPanel(
+      
+      ## original UI calls for modules
+      resortSelectionUI("resortSelect"),
+      addressInputUI("addressInput"),
+      # submitButtonUI("submitButton"),
+      actionButton("submit1", "Try this one!")
+      
+    ),
+    
+    mainPanel(
+      
+      # display output
+      verbatimTextOutput("resortaddressOutput"),
 
+      # Add UI elements for displaying the travel times and map
+      textOutput("travelTimeWithoutTraffic"),
+      textOutput("travelTimeWithTraffic"),
+      google_mapOutput("mapOutput", height = "400px") # Adjust size as needed
+      
+    )
+  )
+)
 
 ##### SERVER
 server <- function(input, output, session) {
   
-  # Calling module server functions and storing the returned reactive expressions
   selected_resort_reactive <- resortSelectionServer("resortSelect")
   user_address_reactive <- addressInputServer("addressInput")
+
+  # original code
+  # submit_address <- eventReactive(input$submit1, {
+  #   resort_address <- get_resort_address(resort_name = selected_resort_reactive())
+  #   return(resort_address)
+  # })
   
-  observeEvent(input$submitButton, {
-    # Accessing the reactive values
-    selected_resort <- selected_resort_reactive()
-    user_address <- user_address_reactive()
+  # new eventreactive with gmaps
+  submit_address <- eventReactive(input$submit1, {
     
+    user_address <- user_address_reactive()
+    selected_resort <- selected_resort_reactive()
+    resort_address <- get_resort_address(resort_name = selected_resort)
+
     if (!is.null(user_address) && !is.null(selected_resort)) {
-      print(paste("Address:", user_address, "Resort:", selected_resort)) # Debugging statement
-      
-      # Assuming get_resort_address returns the address of the resort
-      resort_address <- get_resort_address(resort_name = selected_resort)
-      result <- googleway::google_distance(origins = user_address,
-                                           destinations = resort_address,
-                                           mode = "driving",
-                                           traffic_model = "pessimistic", 
-                                           departure_time = 'now',
-                                           key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
-      
-      if (result$status == "OK") {
-        travel_time_without_traffic <- result$rows$elements[[1]]$duration$text
-        travel_time_with_traffic <- result$rows$elements[[1]]$duration_in_traffic$text
-        
-        output$travelTimeWithoutTraffic <- renderText({ travel_time_without_traffic })
-        output$travelTimeWithTraffic <- renderText({ travel_time_with_traffic })
-        
-        output$mapOutput <- renderGoogle_map({
-          google_map(data = result, key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
-        })
-      } else {
-        print(paste("API Error:", result$status)) # Debugging statement
-        output$travelTimeWithTraffic <- renderText({ paste("Error:", result$status) })
-        output$travelTimeWithoutTraffic <- renderText({ "" })
-      }
+
+      googleway::google_distance(origins = user_address,
+                                 destinations = resort_address,
+                                 mode = "driving",
+                                 traffic_model = "pessimistic",
+                                 departure_time = 'now',
+                                 key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
+    } else {
+      NULL
+    }
+    
+  })
+  
+  output$resortaddressOutput <- renderPrint({
+    submit_address()
+  })
+  
+  # # Using eventReactive to handle the submit button action
+  # submit_response <- eventReactive(input$submitButton, {
+  #   selected_resort <- selected_resort_reactive()
+  #   user_address <- user_address_reactive()
+  # 
+  #   if (!is.null(user_address) && !is.null(selected_resort)) {
+  #     resort_address <- get_resort_address(resort_name = selected_resort)
+  #     googleway::google_distance(origins = user_address,
+  #                                destinations = resort_address,
+  #                                mode = "driving",
+  #                                traffic_model = "pessimistic",
+  #                                departure_time = 'now',
+  #                                key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
+  #   } else {
+  #     NULL
+  #   }
+  # })
+
+  # Update the UI elements based on the response from submit_response
+  output$travelTimeWithoutTraffic <- renderText({
+    if (!is.null(submit_address())) {
+      submit_address()$rows$elements[[1]]$duration$text
     }
   })
+
+  output$travelTimeWithTraffic <- renderText({
+    if (!is.null(submit_address())) {
+      submit_address()$rows$elements[[1]]$duration_in_traffic$text
+    }
+  })
+
+  output$mapOutput <- renderGoogle_map({
+    if (!is.null(submit_address())) {
+      google_map(data = submit_address(), key = "AIzaSyCejTDMFe0MXq_B5CDMCQ5hfiX3GVlbzqw") # Replace with your actual API key
+    }
+  })
+  
 }
 
 shinyApp(ui, server)

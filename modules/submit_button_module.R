@@ -2,7 +2,7 @@
 
 submitButtonUI <- function(id) {
   ns <- NS(id)
-  actionButton(ns("submit"), "Submit")
+  actionButton(ns("submit"), "Check Traffic Times!")
 }
 
 ##### SERVER
