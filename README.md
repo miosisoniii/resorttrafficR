@@ -7,10 +7,10 @@ This R Shiny application uses the GoogleMaps API.
 
 ## Future Plans 🗺️
 
-- Inclusion of a map 🗺️ from the GoogleMaps API
-- Table format instead of a dropdown menu to make it even faster to select which resort to head to.
-- Weather forecast API integration
-- Snow report API integration
+- [ ]Inclusion of a map 🗺️ from the GoogleMaps API
+- [x] Table format instead of a dropdown menu to make it even faster to select which resort to head to.
+- [ ] Weather forecast API integration
+- [ ] Snow report API integration
 
 
-![image](https://github.com/miosisoniii/resorttrafficR/assets/23582531/396732b4-3da1-41ba-8fae-1fad5ae4eba8)
+![image](https://github.com/miosisoniii/resorttrafficR/assets/23582531/5651fa8e-a2ba-4366-93b6-eb329846bfd8)
