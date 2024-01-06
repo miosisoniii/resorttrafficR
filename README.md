@@ -7,7 +7,7 @@ This R Shiny application uses the GoogleMaps API.
 
 ## Future Plans 🗺️
 
-- [ ]Inclusion of a map 🗺️ from the GoogleMaps API
+- [ ] Inclusion of a map 🗺️ from the GoogleMaps API
 - [x] Table format instead of a dropdown menu to make it even faster to select which resort to head to.
 - [ ] Weather forecast API integration
 - [ ] Snow report API integration
