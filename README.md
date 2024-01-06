@@ -6,17 +6,18 @@ This R Shiny application uses the GoogleMaps API and R package `googleway`.
 
 ## Instructions:
 
+- Visit the app on [shinyapps.io](https://artemiosisoniii.shinyapps.io/resorttrafficR/) 🔗
 - Choose a pass, Ikon or Epic
-- Click `Get travel times!`
-- Choose a resort from the dropdown menu
-- Click `Open in Google Maps` to get the directions to the resort of your choosing!
+- Click `Get travel times!` ⏲️
+- Choose a resort from the dropdown menu 
+- Click `Open in Google Maps` to get the directions to the resort of your choosing! 🗺️
 
 
-## Future Plans 🗺️
+## Future Plans 📈
 
 - [ ] Inclusion of a map 🗺️ from the GoogleMaps API
 - [x] Table format instead of a dropdown menu to make it even faster to select which resort to head to.
-- [ ] Weather forecast API integration
+- [ ] Weather forecast API integration 🌨️
 - [ ] Snow report API integration
 
 
