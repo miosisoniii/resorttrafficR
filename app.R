@@ -1,18 +1,21 @@
 ## app.R
 
 ## load dependencies
-require(shiny)
-require(googleway)
+library(shiny)
+library(dplyr)
+library(googleway)
+library(purrr)
 
 ## source inputVars to get input selection vals
 source("R/get_traveltime.R")
-source("./helpers/helper02_inputvars.R")
-source("./R/get_resort_address.R")
+source("R/get_resort_address.R")
+source("helpers/helper02_inputvars.R")
 
 ## source modules code
 source("modules/pass_selection_module.R")
 source("modules/resort_selection_module.R")
 source("modules/address_input_module.R")
+source("modules/resort_link_module.R")
 
 ## Modules Code ----------------------------------------------------------------
 
@@ -24,28 +27,14 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      
-      ## original UI calls for modules
       passSelectionUI("passSelect"),
-      resortSelectionUI("resortSelect"),
+      # resortSelectionUI("resortSelect"),
       addressInputUI("addressInput"),
-      actionButton("submit1", "Try this one!")
-      
+      actionButton("submit2", "Get travel times!"),
     ),
-    
     mainPanel(
-      
-      # display output
-      verbatimTextOutput("resortaddressOutput"),
-
-      # Add UI elements for displaying the travel times and map
-      textOutput("travelTimeWithoutTraffic"),
-      textOutput("travelTimeWithTraffic"),
-      # google_mapOutput("mapOutput", height = "400px") # Adjust size as needed
-      
-      ## get table output to display all travel times
-      tableOutput("travelTimeTable")
-      
+      tableOutput("travelTimeTable"),
+      resortLinkUI("resortLinkModule")
     )
   )
 )
@@ -53,20 +42,26 @@ ui <- fluidPage(
 ##### SERVER
 server <- function(input, output, session) {
   
+  # Reactive value to indicate if the table is ready
+  table_ready <- reactiveVal(FALSE)
+  
   selected_pass_reactive <- passSelectionServer("passSelect")
   selected_resort_reactive <- resortSelectionServer("resortSelect")
   user_address_reactive <- addressInputServer("addressInput")
-
-  # new eventreactive with gmaps
-  submit_address <- eventReactive(input$submit1, {
+  
+  submit_traveltime <- eventReactive(input$submit2, {
     
     user_address <- user_address_reactive()
-    selected_resort <- selected_resort_reactive()
-
-    if (!is.null(user_address) && !is.null(selected_resort)) {
+    selected_pass <- selected_pass_reactive()
+    
+    if(!is.null(user_address) && !is.null(selected_pass)) {
+      pass_resorts <- resort_data %>% filter(NAME_PASS == selected_pass)
+      table_traveltime <- get_traveltime_df(user_address = user_address, resort_df = pass_resorts) 
       
-      get_traveltime(start_address = user_address,
-                     resort_name = selected_resort)
+      ## set reactiveValue to TRUE
+      table_ready(TRUE)
+      return(table_traveltime)
+      
       
     } else {
       NULL
@@ -74,34 +69,49 @@ server <- function(input, output, session) {
     
   })
   
-  
-  
-  
-  
-  
   #### UI OUTPUTS --------------------------------------------------------------
   
-  output$resortaddressOutput <- renderPrint({
-    submit_address()
-  })
-  
   output$travelTimeTable <- renderTable({
-    submit_address()
+    table_ready(TRUE)
+    submit_traveltime() %>%
+      dplyr::select(-NAME_PASS, -gmaps_obj, -TIME_VAL_TRAFFIC, -GMAP_LINK_RESORT, -ADDRESS_RESORT)
   })
   
-  # Update the UI elements based on the response from submit_address
-  output$travelTimeWithoutTraffic <- renderText({
-    if (!is.null(submit_address())) {
-      submit_address()$rows$elements[[1]]$duration$text
-    }
-  })
+  # Call the resort link server function and pass the reactive value
+  resortLinkServer("resortLinkModule", submit_traveltime, table_ready)
+  
+}
 
-  output$travelTimeWithTraffic <- renderText({
-    if (!is.null(submit_address())) {
-      submit_address()$rows$elements[[1]]$duration_in_traffic$text
-    }
-  })
+shinyApp(ui, server)
+  
+  
+  
+  
 
+  ##### Not Used ---------------------------------------------------------------
+  
+  ## may be useful later when selecting individual resorts
+  # selected_pass_reactive <- passSelectionServer("passSelect")
+  # selected_resort_reactive <- resortSelectionServer("resortSelect")
+  # user_address_reactive <- addressInputServer("addressInput")
+  # 
+  # # new eventreactive with gmaps
+  # submit_address <- eventReactive(input$submit1, {
+  #   
+  #   user_address <- user_address_reactive()
+  #   selected_resort <- selected_resort_reactive()
+  #   
+  #   if (!is.null(user_address) && !is.null(selected_resort)) {
+  #     
+  #     get_traveltime(start_address = user_address,
+  #                    resort_name = selected_resort)
+  #     
+  #   } else {
+  #     NULL
+  #   }
+  #   
+  # })
+  
   # this may be useful when showing directions to the fastest resort
   # output$mapOutput <- renderGoogle_map({
   #   if (!is.null(submit_address())) {
@@ -109,9 +119,7 @@ server <- function(input, output, session) {
   #   }
   # })
   # 
-}
 
-shinyApp(ui, server)
 
 
 

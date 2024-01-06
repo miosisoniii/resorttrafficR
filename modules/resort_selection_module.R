@@ -6,6 +6,7 @@ resortSelectionUI <- function(id) {
               choices = c("Eldora" = "Eldora", 
                           "Winter Park" = "Winter Park", 
                           "Copper" = "Copper", 
+                          "Arapahoe Basin" = "Arapahoe Basin",
                           "Steamboat" = "Steamboat", 
                           "Aspen" = "Aspen", 
                           "Breckenridge" = "Breckenridge", 
@@ -13,7 +14,7 @@ resortSelectionUI <- function(id) {
                           "Crested Butte" = "Crested Butte",
                           "Vail" = "Vail",
                           "Beaver Creek" = "Beaver Creek",
-                          "Wolf Creek" = "Wolf Creek"))
+                          "Telluride" = "Telluride"))
 }
 
 ##### SERVER
